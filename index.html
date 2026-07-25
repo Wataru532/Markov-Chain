@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="robots" content="noindex" />
+        <title>Markov Chain</title>
+        <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+        <script>
+            const inputData = "English is a West Germanic language of the Indo-European language family that emerged in early medieval England and has since become a global lingua franca. The language is named after the Angles, one of the Germanic peoples who migrated to Britain after the end of Roman rule. English is the most spoken language in the world, primarily due to the global influence of the former British Empire (succeeded by the Commonwealth of Nations) and the United States. It is the most widely learned second language in the world, with more second-language speakers than native speakers. However, English is only the third-most spoken native language, after Mandarin Chinese and Spanish. English is either the official language, or one of the official languages, of 57 sovereign states and 30 dependent territories, making it the most geographically widespread language in the world. In the United Kingdom, the United States, Australia, and New Zealand, it is the dominant language for historical reasons without being explicitly defined by law. It is a co-official language of the United Nations, the European Union, and many other international and regional organisations. It has also become the de facto lingua franca of diplomacy, science, technology, international trade, logistics, tourism, aviation, entertainment, and the Internet. Ethnologue estimated that there were over 1.4 billion speakers worldwide as of 2021. Old English emerged from a group of West Germanic dialects spoken by the Anglo-Saxons. Early inscriptions were written with runes before a Latin-based alphabet was adopted for longer texts. Late Old English borrowed some grammar and core vocabulary from Old Norse, a North Germanic language. An evolution of the Latin alphabet, the English alphabet, fully supplanted the runic alphabet by the High Middle Ages, coinciding with the emergence of Middle English in England under Norman control. Middle English borrowed vocabulary extensively from French dialects, which are the source of approximately 28 percent of Modern English words, and from Latin, which is the source of an additional 28 percent. While Latin and the Romance languages are thus the source for a majority of its lexicon taken as a whole, English's grammar and phonology remain Germanic, as does most of its basic everyday vocabulary. Finally, Middle English transformed, in part through the Great Vowel Shift, into Modern English, which exists on a dialect continuum with Scots; it is next most closely related to Low Saxon and Frisian"
+
+            // ここからデータ格納処理
+            const storedData = {};
+            const temp = inputData.toLowerCase().split(". ");
+            const inputDataList = temp.map(x => x.split(/\s+/).filter(s => s.length > 0));
+
+            const resultDataList = inputDataList.map(row => row.slice());
+            for (let j = 0; j < inputDataList.length; j++) {
+                let l = inputDataList[j];
+                let resL = l.slice();
+                for (let i = 0; i < l.length; i++) {
+                    let value = l[i];
+                    let lastChar = value[value.length - 1];
+                    if (lastChar === "," || lastChar === ":" || lastChar === ";") {
+                        // resL[i:i+1] = [value[:-1], value[-1]] に相当
+                        resL.splice(i, 1, value.slice(0, -1), lastChar);
+                    }
+                }
+                resultDataList[j] = resL;
+            }
+
+            const flatData = [];
+            for (let row of resultDataList) {
+                for (let element of row) {
+                    flatData.push(element);
+                }
+            }
+            const setData = Array.from(new Set(flatData));
+
+            for (let value of setData) {
+                storedData[value] = [];
+            }
+
+            for (let item of resultDataList) {
+                for (let i = 0; i < item.length - 1; i++) {
+                    storedData[item[i]].push(item[i + 1]);
+                }
+            }
+            // ここまでデータ格納処理
+
+            // ここからパーセンテージ計算
+            const storedPercentageData = {};
+            for (let i of setData) {
+                let item = storedData[i];
+                let l = item.length;
+                let s = Array.from(new Set(item));
+
+                let percentageDict = {};
+                for (let j of s) {
+                    let count = item.filter(x => x === j).length;
+                    percentageDict[j] = count / l;
+                }
+
+                storedPercentageData[i] = percentageDict;
+            }
+            // ここまでパーセンテージ計算
+
+            // ここから実行処理
+            const generate = () => {
+                const startingWord = document.getElementById("startingWord").value;
+                const length = document.getElementById("length").value;
+
+                if (!(flatData.includes(startingWord))) {
+                    alert("There is no such a word.")
+                } else {
+                    var result = String(startingWord);
+                    var now = String(startingWord);
+
+                    for (let i = 0; i < length; i++) {
+                        let data = storedPercentageData[now];
+
+                        try {
+                            let keys = Object.keys(data);
+                            let weights = Object.values(data);
+                            let nextWord = weightedChoice(keys, weights);
+
+                            result += ` ${nextWord!==undefined ? nextWord : ""}`;
+                            now = nextWord;
+                        } catch (e) {
+                            break;
+                        }
+                    }
+
+                    document.getElementById("output").textContent = result;
+                    return result;
+                }
+            }
+            // ここまで実行処理
+
+            // ここから重み付き乱数選択処理
+            const weightedChoice = (keys, weights) => {
+                const total = weights.reduce((sum, w) => sum + w, 0);
+                let r = Math.random() * total;
+
+                for (let i = 0; i < keys.length; i++) {
+                    r -= weights[i];
+                    if (r <= 0) {
+                        return keys[i];
+                    }
+                }
+                // 浮動小数点誤差対策で万一ループを抜けた場合は最後の要素を返す
+                return keys[keys.length - 1];
+            }
+            // ここまで重み付き乱数選択処理
+        </script>
+        <style>
+            :root {
+                color-scheme: dark;
+                --bg-start: #07111f;
+                --bg-end: #162a44;
+                --card: rgba(255, 255, 255, 0.1);
+                --card-border: rgba(255, 255, 255, 0.18);
+                --text: #f5f7ff;
+                --muted: #a7b4c8;
+                --accent: #67e8f9;
+                --accent-strong: #38bdf8;
+                --shadow: 0 18px 45px rgba(0, 0, 0, 0.26);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                font-family: 'Segoe UI', 'Inter', 'Arial', sans-serif;
+                background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+                color: var(--text);
+                display: grid;
+                place-items: center;
+                padding: 24px;
+            }
+
+            .app-shell {
+                width: min(100%, 720px);
+            }
+
+            .hero-card {
+                background: var(--card);
+                border: 1px solid var(--card-border);
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
+                border-radius: 24px;
+                box-shadow: var(--shadow);
+                padding: 32px;
+            }
+
+            .eyebrow {
+                margin: 0 0 8px;
+                color: var(--accent);
+                text-transform: uppercase;
+                letter-spacing: 0.24em;
+                font-size: 0.78rem;
+                font-weight: 700;
+            }
+
+            h1 {
+                margin: 0 0 10px;
+                font-size: clamp(2rem, 4vw, 2.8rem);
+                font-weight: 800;
+            }
+
+            .subtitle {
+                margin: 0 0 24px;
+                color: var(--muted);
+                line-height: 1.6;
+            }
+
+            .controls {
+                display: grid;
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .field {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+
+            input {
+                width: 100%;
+                border: 1px solid rgba(255, 255, 255, 0.16);
+                border-radius: 14px;
+                padding: 12px 14px;
+                font-size: 1rem;
+                background: rgba(255, 255, 255, 0.08);
+                color: var(--text);
+                outline: none;
+                transition: border-color 0.2s ease, transform 0.2s ease;
+            }
+
+            input:focus {
+                border-color: var(--accent);
+                transform: translateY(-1px);
+            }
+
+            .generateButton {
+                border: none;
+                border-radius: 999px;
+                padding: 12px 20px;
+                font-size: 0.98rem;
+                font-weight: 700;
+                color: #03111d;
+                background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+                cursor: pointer;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                box-shadow: 0 10px 24px rgba(56, 189, 248, 0.3);
+            }
+
+            .generateButton:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 14px 28px rgba(56, 189, 248, 0.35);
+            }
+
+            .output-panel {
+                margin-top: 20px;
+                padding: 18px 20px;
+                border-radius: 18px;
+                background: rgba(7, 17, 31, 0.4);
+                border: 1px solid rgba(255, 255, 255, 0.12);
+            }
+
+            .output-label {
+                margin: 0 0 8px;
+                font-size: 0.85rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.2em;
+                color: var(--accent);
+            }
+
+            .output {
+                margin: 0;
+                line-height: 1.7;
+                color: var(--text);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-shell">
+            <div class="hero-card">
+                <p class="eyebrow">Text generator</p>
+                <h1>Markov Chain</h1>
+                <p class="subtitle">Create expressive sentences from a weighted word sequence.</p>
+
+                <div class="controls">
+                    <label class="field">
+                        <span>Starting word</span>
+                        <input type="text" class="s_inputbox" id="startingWord" placeholder="e.g. english">
+                    </label>
+                    <label class="field">
+                        <span>Sentence length</span>
+                        <input type="number" class="l_inputbox" id="length" min="1" value="10">
+                    </label>
+                </div>
+
+                <button class="generateButton" onClick="generate()">Generate</button>
+
+                <div class="output-panel">
+                    <p class="output-label">Generated sentence</p>
+                    <p class="output" id="output">Your result will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
